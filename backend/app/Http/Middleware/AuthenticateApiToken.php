@@ -23,7 +23,7 @@ class AuthenticateApiToken
         }
         $record = DB::table('api_tokens')->where('token_hash', hash('sha256', $token))->where('expires_at', '>', now())->first();
         $user = $record ? User::find($record->user_id) : null;
-        if (! $user) {
+        if (! $user || ! $user->is_active) {
             return response()->json(['message' => 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'], 401);
         }
         $request->setUserResolver(fn () => $user);

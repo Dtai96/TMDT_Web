@@ -29,6 +29,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'name' => 'encrypted',
             'email' => 'encrypted',
+            'is_active' => 'boolean',
         ];
     }
 }

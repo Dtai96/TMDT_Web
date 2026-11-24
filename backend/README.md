@@ -52,6 +52,19 @@ Các endpoint:
 
 `POST /api/checkout` yêu cầu bearer token hợp lệ. Tên và email tài khoản được mã hóa AES; mật khẩu được băm. Email được tra cứu thông qua giá trị HMAC dựa trên `APP_KEY`: khi xoay khóa, cần chuyển đổi lại chỉ mục này cùng dữ liệu mã hóa; chỉ thiết lập `APP_PREVIOUS_KEYS` không tự cập nhật chỉ mục đăng nhập.
 
+## Phân quyền User, Manager và Admin
+
+Tài khoản đăng ký mới mặc định là `user`. Để cấp quyền Admin đầu tiên, đăng ký một tài khoản trên website, rồi chạy trong thư mục `backend/`:
+
+```powershell
+php artisan migrate --no-interaction
+php artisan app:assign-admin "email-cua-ban@example.com"
+```
+
+Thay email bằng email đã đăng ký. Đăng xuất và đăng nhập lại để giao diện cập nhật quyền. Trong mục **Quản trị**, Admin có thể đổi vai trò, khóa hoặc mở khóa tài khoản; Manager và Admin có thể thêm, sửa và ngừng bán sản phẩm. Tài khoản đang đăng nhập không thể tự khóa hoặc tự hạ quyền Admin. Khi khóa một tài khoản, các token đăng nhập của tài khoản đó bị thu hồi.
+
+Các API quản trị nằm dưới `/api/management/products` và `/api/management/users`. Backend kiểm tra bearer token và quyền trên mỗi yêu cầu. Không có mật khẩu Admin mặc định.
+
 Kiểm tra route hoặc trạng thái migration:
 
 ```powershell

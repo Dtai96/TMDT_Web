@@ -26,14 +26,14 @@ class AuthController extends Controller
         }
         $user = User::create(['name' => $data['name'], 'email' => $email, 'email_lookup' => $lookup, 'password' => $data['password']]);
 
-        return $this->issueToken($user, 201);
+        return $this->issueToken($user->refresh(), 201);
     }
 
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate(['email' => ['required', 'email', 'max:160'], 'password' => ['required', 'string', 'max:255']]);
         $user = User::where('email_lookup', $this->lookup($data['email']))->first();
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (! $user || ! $user->is_active || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages(['email' => 'Email hoặc mật khẩu không chính xác.']);
         }
 

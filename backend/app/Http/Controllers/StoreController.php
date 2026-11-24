@@ -22,7 +22,7 @@ class StoreController extends Controller
             $query->where(fn ($q) => $q->where('name', 'like', '%'.$request->q.'%')->orWhere('description', 'like', '%'.$request->q.'%'));
         }
 
-        return response()->json($query->orderBy('id')->get());
+        return response()->json($query->orderBy('id')->get()->makeHidden('wholesale_price'));
     }
 
     public function checkout(Request $request)

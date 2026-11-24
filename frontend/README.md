@@ -33,6 +33,8 @@ if (!(Test-Path .env)) { Copy-Item .env.example .env }
 
 Khách cần đăng ký hoặc đăng nhập để thấy giỏ hàng và đặt hàng. Phiên web được giữ trong tab hiện tại; trên điện thoại phiên hiện chỉ tồn tại khi ứng dụng đang mở. Đăng xuất sẽ xóa giỏ hàng hiện tại.
 
+Manager và Admin có mục **Quản trị** sau khi đăng nhập. Manager quản lý sản phẩm; Admin quản lý thêm vai trò và trạng thái tài khoản. Xem `../backend/README.md` để cấp Admin đầu tiên.
+
 ## Chạy backend và frontend trên máy tính
 
 Mở **Terminal 1**:
