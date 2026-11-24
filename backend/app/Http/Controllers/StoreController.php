@@ -63,6 +63,7 @@ class StoreController extends Controller
             'desired_time' => $data['desired_time'] ?? null, 'referral_source' => $data['referral_source'] ?? null,
             'subtotal' => $subtotal, 'shipping_fee' => $shipping, 'total' => $subtotal + $shipping,
             'status' => 'Chờ xác nhận', 'payment_method' => $data['payment_method'],
+            'user_id' => $request->user()->id,
         ]);
         $order->items()->createMany($lines);
 

@@ -31,6 +31,8 @@ if (!(Test-Path .env)) { Copy-Item .env.example .env }
 
 `EXPO_PUBLIC_API_URL` trong `.env` cho Expo biết địa chỉ Laravel. Chọn đúng cấu hình dưới đây trước khi chạy frontend.
 
+Khách cần đăng ký hoặc đăng nhập để thấy giỏ hàng và đặt hàng. Phiên web được giữ trong tab hiện tại; trên điện thoại phiên hiện chỉ tồn tại khi ứng dụng đang mở. Đăng xuất sẽ xóa giỏ hàng hiện tại.
+
 ## Chạy backend và frontend trên máy tính
 
 Mở **Terminal 1**:

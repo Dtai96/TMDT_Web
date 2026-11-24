@@ -17,7 +17,8 @@ class CustomerFlowsTest extends TestCase
     public function test_checkout_saves_encrypted_delivery_preferences_and_server_price(): void
     {
         $product = Product::create(['name' => 'Gà', 'slug' => 'ga', 'category' => 'Gà tươi', 'description' => 'Mẫu', 'price' => 100000, 'wholesale_price' => 90000, 'unit' => 'kg', 'image' => 'sample', 'is_active' => true]);
-        $this->postJson('/api/checkout', ['customer_name' => 'An', 'phone' => '0900000000', 'address' => 'Đắk Lắk', 'desired_time' => 'Buổi sáng', 'referral_source' => 'Bạn bè', 'channel' => 'D2C', 'payment_method' => 'cod', 'items' => [['id' => $product->id, 'quantity' => 2, 'price' => 1]]])->assertCreated()->assertJsonPath('total', 230000);
+        $token = $this->postJson('/api/register', ['name' => 'An', 'email' => 'an@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'])->json('token');
+        $this->withToken($token)->postJson('/api/checkout', ['customer_name' => 'An', 'phone' => '0900000000', 'address' => 'Đắk Lắk', 'desired_time' => 'Buổi sáng', 'referral_source' => 'Bạn bè', 'channel' => 'D2C', 'payment_method' => 'cod', 'items' => [['id' => $product->id, 'quantity' => 2, 'price' => 1]]])->assertCreated()->assertJsonPath('total', 230000);
         $order = Order::firstOrFail();
         $this->assertSame('Buổi sáng', $order->desired_time);
         $this->assertSame('Bạn bè', $order->referral_source);

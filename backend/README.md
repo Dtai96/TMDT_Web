@@ -47,6 +47,10 @@ Các endpoint:
 - `GET /api/products` — danh sách; có thể lọc bằng `?category=Gà%20tươi` hoặc tìm bằng `?q=gà`.
 - `POST /api/checkout` — tạo đơn hàng và các dòng sản phẩm.
 - `POST /api/wholesale` — ghi yêu cầu hợp tác/giá sỉ.
+- `POST /api/register`, `POST /api/login` — đăng ký và đăng nhập, trả về bearer token.
+- `GET /api/me`, `POST /api/logout` — đọc thông tin tài khoản hoặc thu hồi token hiện tại; cần header `Authorization: Bearer <token>`.
+
+`POST /api/checkout` yêu cầu bearer token hợp lệ. Tên và email tài khoản được mã hóa AES; mật khẩu được băm. Email được tra cứu thông qua giá trị HMAC dựa trên `APP_KEY`: khi xoay khóa, cần chuyển đổi lại chỉ mục này cùng dữ liệu mã hóa; chỉ thiết lập `APP_PREVIOUS_KEYS` không tự cập nhật chỉ mục đăng nhập.
 
 Kiểm tra route hoặc trạng thái migration:
 
