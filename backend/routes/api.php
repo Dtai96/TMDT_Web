@@ -23,6 +23,12 @@ Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::middleware(RequireRole::class.':admin')->prefix('management')->group(function () {
         Route::get('/users', [ManagementController::class, 'users']);
         Route::put('/users/{user}', [ManagementController::class, 'updateUser']);
+        Route::get('/orders', [ManagementController::class, 'orders']);
+        Route::put('/orders/{order}', [ManagementController::class, 'updateOrder']);
+        Route::get('/wholesale', [ManagementController::class, 'wholesaleRequests']);
+        Route::put('/wholesale/{lead}', [ManagementController::class, 'updateWholesaleRequest']);
+        Route::get('/complaints', [ManagementController::class, 'complaints']);
+        Route::put('/complaints/{complaint}', [ManagementController::class, 'updateComplaint']);
     });
 });
 Route::post('/wholesale', [StoreController::class, 'wholesale'])->name('wholesale');

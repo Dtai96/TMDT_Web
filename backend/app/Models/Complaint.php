@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Complaint extends Model
 {
-    protected $fillable = ['code', 'name', 'phone', 'order_code', 'description', 'received_at', 'status'];
+    protected $fillable = ['code', 'name', 'phone', 'order_code', 'description', 'received_at', 'status', 'resolution'];
 
     protected function casts(): array
     {
-        return ['name' => 'encrypted', 'phone' => 'encrypted', 'order_code' => 'encrypted', 'description' => 'encrypted', 'received_at' => 'encrypted'];
+        return ['name' => 'encrypted', 'phone' => 'encrypted', 'order_code' => 'encrypted', 'description' => 'encrypted', 'received_at' => 'encrypted', 'resolution' => 'encrypted'];
     }
 }

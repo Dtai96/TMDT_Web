@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WholesaleLead extends Model
 {
-    protected $fillable = ['business_name', 'contact_name', 'phone', 'email', 'monthly_volume', 'message', 'delivery_location', 'purchase_frequency'];
+    protected $fillable = ['business_name', 'contact_name', 'phone', 'email', 'monthly_volume', 'message', 'delivery_location', 'purchase_frequency', 'reference', 'status', 'quote_details'];
 
     protected function casts(): array
     {
@@ -18,6 +18,7 @@ class WholesaleLead extends Model
             'message' => 'encrypted',
             'delivery_location' => 'encrypted',
             'purchase_frequency' => 'encrypted',
+            'quote_details' => 'encrypted',
         ];
     }
 }

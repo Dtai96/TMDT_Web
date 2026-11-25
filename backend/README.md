@@ -52,6 +52,8 @@ Các endpoint:
 
 `POST /api/checkout` yêu cầu bearer token hợp lệ. Tên và email tài khoản được mã hóa AES; mật khẩu được băm. Email được tra cứu thông qua giá trị HMAC dựa trên `APP_KEY`: khi xoay khóa, cần chuyển đổi lại chỉ mục này cùng dữ liệu mã hóa; chỉ thiết lập `APP_PREVIOUS_KEYS` không tự cập nhật chỉ mục đăng nhập.
 
+Đơn D2C mới chỉ có tiền hàng; `shipping_fee` và `total` để trống cho đến khi Admin nhập phí sau khi liên hệ khách. Admin phải xác nhận khách đồng ý trước khi đánh dấu đơn đã xác nhận. Yêu cầu B2B được cấp mã và lưu riêng; Admin có thể ghi báo giá và trạng thái trong khu vực quản trị. Báo giá, thay đổi đơn và phản ánh đều cần được trại thông báo cho khách qua kênh liên lạc riêng; website chưa gửi thông báo tự động.
+
 ## Phân quyền User, Manager và Admin
 
 Tài khoản đăng ký mới mặc định là `user`. Để cấp quyền Admin đầu tiên, đăng ký một tài khoản trên website, rồi chạy trong thư mục `backend/`:

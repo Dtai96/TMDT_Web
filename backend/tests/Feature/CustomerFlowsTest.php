@@ -18,7 +18,7 @@ class CustomerFlowsTest extends TestCase
     {
         $product = Product::create(['name' => 'Gà', 'slug' => 'ga', 'category' => 'Gà tươi', 'description' => 'Mẫu', 'price' => 100000, 'wholesale_price' => 90000, 'unit' => 'kg', 'image' => 'sample', 'is_active' => true]);
         $token = $this->postJson('/api/register', ['name' => 'An', 'email' => 'an@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'])->json('token');
-        $this->withToken($token)->postJson('/api/checkout', ['customer_name' => 'An', 'phone' => '0900000000', 'address' => 'Đắk Lắk', 'desired_time' => 'Buổi sáng', 'referral_source' => 'Bạn bè', 'channel' => 'D2C', 'payment_method' => 'cod', 'items' => [['id' => $product->id, 'quantity' => 2, 'price' => 1]]])->assertCreated()->assertJsonPath('total', 230000);
+        $this->withToken($token)->postJson('/api/checkout', ['customer_name' => 'An', 'phone' => '0900000000', 'address' => 'Đắk Lắk', 'desired_time' => 'Buổi sáng', 'referral_source' => 'Bạn bè', 'channel' => 'D2C', 'payment_method' => 'cod', 'items' => [['id' => $product->id, 'quantity' => 2, 'price' => 1]]])->assertCreated()->assertJsonPath('subtotal', 200000)->assertJsonPath('shipping_fee', null)->assertJsonPath('total', null);
         $order = Order::firstOrFail();
         $this->assertSame('Buổi sáng', $order->desired_time);
         $this->assertSame('Bạn bè', $order->referral_source);
@@ -27,11 +27,21 @@ class CustomerFlowsTest extends TestCase
 
     public function test_wholesale_requires_location_and_frequency_and_encrypts_them(): void
     {
-        $input = ['business_name' => 'Bếp ăn', 'contact_name' => 'An', 'phone' => '0900000000', 'monthly_volume' => '50 kg'];
+        $input = ['business_name' => 'Bếp ăn', 'contact_name' => 'An', 'phone' => '0900000000', 'monthly_volume' => '50 kg', 'message' => 'Cần gà tươi'];
         $this->postJson('/api/wholesale', $input)->assertUnprocessable()->assertJsonValidationErrors(['delivery_location', 'purchase_frequency']);
         $this->postJson('/api/wholesale', $input + ['delivery_location' => 'Đắk Lắk', 'purchase_frequency' => 'Hàng tuần'])->assertCreated();
         $this->assertSame('Đắk Lắk', WholesaleLead::firstOrFail()->delivery_location);
         $this->assertNotSame('Đắk Lắk', DB::table('wholesale_leads')->value('delivery_location'));
+    }
+
+    public function test_checkout_rejects_duplicate_products_and_excessive_totals(): void
+    {
+        $product = Product::create(['name' => 'Gà', 'slug' => 'ga', 'category' => 'Gà tươi', 'description' => 'Mẫu', 'price' => 1000000000, 'wholesale_price' => 90000, 'unit' => 'kg', 'image' => 'sample', 'is_active' => true]);
+        $token = $this->postJson('/api/register', ['name' => 'An', 'email' => 'an@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'])->json('token');
+        $input = ['customer_name' => 'An', 'phone' => '0900000000', 'address' => 'Đắk Lắk', 'channel' => 'D2C', 'payment_method' => 'cod'];
+        $this->withToken($token)->postJson('/api/checkout', $input + ['items' => [['id' => $product->id, 'quantity' => 1], ['id' => $product->id, 'quantity' => 1]]])->assertUnprocessable()->assertJsonValidationErrors(['items.0.id']);
+        $this->withToken($token)->postJson('/api/checkout', $input + ['items' => [['id' => $product->id, 'quantity' => 4]]])->assertUnprocessable()->assertJsonValidationErrors(['items']);
+        $this->assertDatabaseCount('orders', 0);
     }
 
     public function test_complaint_returns_reference_and_encrypts_details(): void

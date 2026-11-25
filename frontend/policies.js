@@ -5,7 +5,7 @@ export const policies = [
     body: 'Phạm vi phục vụ, phí giao dự kiến, xác nhận đơn và kiểm tra hàng khi nhận.',
     sections: [
       ['Phạm vi phục vụ', 'Trại ưu tiên phục vụ tại Đắk Lắk. Đơn gần trại có thể được giao theo khung giờ đã thống nhất; đơn xa hơn có thể được gom theo tuyến. Những khu vực chưa đáp ứng điều kiện vận chuyển chỉ được nhận sau khi trại xác nhận khả năng giao và bảo quản phù hợp.'],
-      ['Xác nhận đơn và phí giao', 'Sau khi nhận yêu cầu, trại liên hệ xác nhận sản phẩm, số lượng, đơn vị tính, giá, địa chỉ, phí giao và thời gian dự kiến. Số tiền trên website là dự kiến. Phí cuối cùng phụ thuộc địa chỉ, tuyến và điều kiện bảo quản; trại thông báo để khách đồng ý trước khi thực hiện đơn.'],
+      ['Xác nhận đơn và phí giao', 'Sau khi nhận yêu cầu, trại liên hệ xác nhận sản phẩm, số lượng, đơn vị tính, giá, địa chỉ, phí giao và thời gian dự kiến. Website hiển thị tiền hàng khi đặt; phí giao và tổng thanh toán được trại thông báo sau theo địa chỉ, tuyến và điều kiện bảo quản để khách đồng ý trước khi thực hiện đơn.'],
       ['Thay đổi và nhận hàng', 'Nếu thiếu hàng hoặc cần thay đổi lịch, trại thông báo sớm và chỉ thay sản phẩm khi khách đồng ý. Khi nhận hàng, khách kiểm tra số lượng, bao bì và tình trạng bên ngoài. Nếu không thể nhận hàng, hai bên thống nhất phương án giao lại; chi phí phát sinh được thông báo trước.'],
       ['Đơn hàng B2B', 'Địa điểm, tần suất, điều kiện bảo quản và lịch giao định kỳ được ghi trong báo giá hoặc thỏa thuận riêng. Khách doanh nghiệp cần thông báo sớm nếu có thay đổi nhu cầu để hai bên thống nhất khả năng đáp ứng.'],
     ],
@@ -16,7 +16,7 @@ export const policies = [
     sections: [
       ['Đơn hàng D2C', 'Khách có thể chọn thanh toán khi nhận hàng (COD) nếu tuyến giao hàng hỗ trợ, hoặc chuyển khoản theo thông tin chính thức do trại cung cấp sau khi xác nhận đơn. Website hiện ghi nhận lựa chọn thanh toán; việc đối chiếu tiền chuyển khoản được thực hiện thủ công.'],
       ['Đơn hàng B2B', 'Giá, số lượng tối thiểu, thời hạn hiệu lực của báo giá, khoản đặt cọc nếu có, thời điểm thanh toán phần còn lại và chứng từ được hai bên thỏa thuận trong báo giá hoặc xác nhận đơn. Không mặc định áp dụng giá trên website cho đơn mua sỉ.'],
-      ['Tổng tiền và xác nhận', 'Tổng dự kiến bao gồm tiền hàng và phí giao dự kiến. Nhân viên thông báo tổng tiền và chi phí giao đã xác nhận trước khi thực hiện đơn. Nếu có thay đổi, trại thông báo để khách đồng ý trước khi tiếp tục.'],
+      ['Tổng tiền và xác nhận', 'Website hiển thị tiền hàng trước khi khách gửi đơn. Phí giao được xác định theo địa chỉ, tuyến và điều kiện bảo quản. Nhân viên thông báo phí giao và tổng tiền để khách đồng ý trước khi thực hiện đơn. Nếu có thay đổi, trại thông báo để khách đồng ý trước khi tiếp tục.'],
       ['An toàn giao dịch', 'Khi chuyển khoản, khách sử dụng thông tin nhận tiền chính thức được trại xác nhận và ghi nội dung theo hướng dẫn để đối chiếu đơn. Không cung cấp mật khẩu ngân hàng, mã OTP hoặc thông tin thẻ không cần thiết. Khoản đã thanh toán và việc hoàn tiền, nếu có, được đối chiếu theo đơn và thỏa thuận.'],
     ],
   },

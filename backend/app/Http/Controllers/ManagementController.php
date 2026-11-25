@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Complaint;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\WholesaleLead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +60,66 @@ class ManagementController extends Controller
     public function users(): JsonResponse
     {
         return response()->json(User::query()->orderBy('id')->get(['id', 'name', 'email', 'role', 'is_active', 'created_at']));
+    }
+
+    public function orders(): JsonResponse
+    {
+        return response()->json(Order::with('items')->latest('id')->limit(100)->get());
+    }
+
+    public function updateOrder(Request $request, Order $order): JsonResponse
+    {
+        $data = $request->validate([
+            'shipping_fee' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+            'status' => ['required', Rule::in(['Chờ xác nhận', 'Chờ khách đồng ý', 'Đã xác nhận', 'Đang giao', 'Đã giao', 'Đã hủy'])],
+        ]);
+        if (in_array($data['status'], ['Đã xác nhận', 'Đang giao', 'Đã giao'], true) && ($data['shipping_fee'] ?? null) === null) {
+            return response()->json(['message' => 'Cần nhập phí giao đã thỏa thuận trước khi xác nhận đơn.'], 422);
+        }
+        $order->shipping_fee = $data['shipping_fee'] ?? null;
+        $order->total = $order->shipping_fee === null ? null : $order->subtotal + $order->shipping_fee;
+        $order->status = $data['status'];
+        $order->save();
+
+        return response()->json($order->load('items'));
+    }
+
+    public function wholesaleRequests(): JsonResponse
+    {
+        return response()->json(WholesaleLead::latest('id')->limit(100)->get());
+    }
+
+    public function complaints(): JsonResponse
+    {
+        return response()->json(Complaint::latest('id')->limit(100)->get());
+    }
+
+    public function updateComplaint(Request $request, Complaint $complaint): JsonResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['Mới tiếp nhận', 'Đang xác minh', 'Đã phản hồi', 'Hoàn tất'])],
+            'resolution' => ['nullable', 'string', 'max:5000'],
+        ]);
+        if (in_array($data['status'], ['Đã phản hồi', 'Hoàn tất'], true) && ! trim($data['resolution'] ?? '')) {
+            return response()->json(['message' => 'Vui lòng ghi phương án hoặc kết quả xử lý.'], 422);
+        }
+        $complaint->update($data);
+
+        return response()->json($complaint->refresh());
+    }
+
+    public function updateWholesaleRequest(Request $request, WholesaleLead $lead): JsonResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['Mới tiếp nhận', 'Đang trao đổi', 'Đã báo giá', 'Hoàn tất', 'Đã hủy'])],
+            'quote_details' => ['nullable', 'string', 'max:5000'],
+        ]);
+        if (in_array($data['status'], ['Đã báo giá', 'Hoàn tất'], true) && ! trim($data['quote_details'] ?? '')) {
+            return response()->json(['message' => 'Vui lòng ghi nội dung báo giá đã trao đổi.'], 422);
+        }
+        $lead->update($data);
+
+        return response()->json($lead->refresh());
     }
 
     public function updateUser(Request $request, User $user): JsonResponse

@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\WholesaleLead;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -36,9 +37,9 @@ class StoreController extends Controller
             'desired_time' => ['nullable', 'string', 'max:120'],
             'referral_source' => ['nullable', 'string', 'max:160'],
             'payment_method' => ['required', 'in:cod,bank'],
-            'channel' => ['required', 'in:B2C,D2C'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'integer', 'exists:products,id'],
+            'channel' => ['required', 'in:D2C'],
+            'items' => ['required', 'array', 'min:1', 'max:50'],
+            'items.*.id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
 
@@ -53,21 +54,27 @@ class StoreController extends Controller
             $price = $product->price;
             $lineTotal = $price * $item['quantity'];
             $subtotal += $lineTotal;
+            if ($subtotal > 3000000000) {
+                throw ValidationException::withMessages(['items' => 'Giá trị đơn hàng vượt giới hạn. Vui lòng gửi yêu cầu báo giá B2B.']);
+            }
             $lines[] = ['product_id' => $product->id, 'product_name' => $product->name, 'quantity' => $item['quantity'], 'unit_price' => $price, 'line_total' => $lineTotal];
         }
-        $shipping = $subtotal >= 500000 ? 0 : 30000;
-        $order = Order::create([
-            'code' => 'GM'.now()->format('ymd').strtoupper(Str::random(5)),
-            'customer_name' => $data['customer_name'], 'phone' => $data['phone'], 'email' => $data['email'] ?? null,
-            'address' => $data['address'], 'note' => $data['note'] ?? null, 'channel' => $data['channel'],
-            'desired_time' => $data['desired_time'] ?? null, 'referral_source' => $data['referral_source'] ?? null,
-            'subtotal' => $subtotal, 'shipping_fee' => $shipping, 'total' => $subtotal + $shipping,
-            'status' => 'Chờ xác nhận', 'payment_method' => $data['payment_method'],
-            'user_id' => $request->user()->id,
-        ]);
-        $order->items()->createMany($lines);
+        $order = DB::transaction(function () use ($data, $subtotal, $lines, $request) {
+            $order = Order::create([
+                'code' => 'GM'.now()->format('ymd').strtoupper(Str::random(5)),
+                'customer_name' => $data['customer_name'], 'phone' => $data['phone'], 'email' => $data['email'] ?? null,
+                'address' => $data['address'], 'note' => $data['note'] ?? null, 'channel' => $data['channel'],
+                'desired_time' => $data['desired_time'] ?? null, 'referral_source' => $data['referral_source'] ?? null,
+                'subtotal' => $subtotal, 'shipping_fee' => null, 'total' => null,
+                'status' => 'Chờ xác nhận', 'payment_method' => $data['payment_method'],
+                'user_id' => $request->user()->id,
+            ]);
+            $order->items()->createMany($lines);
 
-        return response()->json(['message' => 'Đặt hàng thành công', 'code' => $order->code, 'total' => $order->total], 201);
+            return $order;
+        });
+
+        return response()->json(['message' => 'Đã tiếp nhận đơn. Trại sẽ xác nhận phí giao và tổng tiền.', 'code' => $order->code, 'subtotal' => $order->subtotal, 'shipping_fee' => null, 'total' => null], 201);
     }
 
     public function wholesale(Request $request)
@@ -75,12 +82,12 @@ class StoreController extends Controller
         $data = $request->validate([
             'business_name' => ['required', 'string', 'max:160'], 'contact_name' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'max:20'], 'email' => ['nullable', 'email', 'max:160'],
-            'monthly_volume' => ['required', 'string', 'max:80'], 'message' => ['nullable', 'string', 'max:1000'],
+            'monthly_volume' => ['required', 'string', 'max:80'], 'message' => ['required', 'string', 'max:1000'],
             'delivery_location' => ['required', 'string', 'max:255'], 'purchase_frequency' => ['required', 'string', 'max:100'],
         ]);
-        WholesaleLead::create($data);
+        $lead = WholesaleLead::create($data + ['reference' => 'B2B'.now()->format('ymd').strtoupper(Str::random(6))]);
 
-        return response()->json(['message' => 'Cảm ơn bạn! Trại Gà Siêu Môn sẽ liên hệ trong 1 ngày làm việc.'], 201);
+        return response()->json(['message' => 'Đã tiếp nhận yêu cầu báo giá. Trại sẽ liên hệ để trao đổi.', 'reference' => $lead->reference], 201);
     }
 
     public function complaint(Request $request)

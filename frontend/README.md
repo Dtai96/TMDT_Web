@@ -35,6 +35,8 @@ Khách cần đăng ký hoặc đăng nhập để thấy giỏ hàng và đặt
 
 Manager và Admin có mục **Quản trị** sau khi đăng nhập. Manager quản lý sản phẩm; Admin quản lý thêm vai trò và trạng thái tài khoản. Xem `../backend/README.md` để cấp Admin đầu tiên.
 
+Admin cũng có thể xem đơn D2C, yêu cầu báo giá B2B và phản ánh. Phí giao D2C do trại xác nhận theo địa chỉ sau khi khách gửi đơn; báo giá B2B được thỏa thuận riêng. Việc liên hệ khách và ghi nhận khách đồng ý hiện thực hiện thủ công.
+
 ## Chạy backend và frontend trên máy tính
 
 Mở **Terminal 1**:

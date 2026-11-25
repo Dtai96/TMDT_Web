@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import TradeManagement from './TradeManagement';
 
 const initial = { name: '', category: 'Gà tươi', description: '', price: '', wholesale_price: '', unit: 'kg', image: '', badge: '', is_active: true };
 const roles = ['user', 'manager', 'admin'];
@@ -23,7 +24,7 @@ export default function Management({ apiBase, token, user, onProductChange, noti
   }
   async function load() {
     setLoading(true); setError('');
-    try { if (tab === 'users') setUsers(await request('/users')); else setProducts(await request('/products')); }
+    try { if (tab === 'users') setUsers(await request('/users')); else if (tab === 'products') setProducts(await request('/products')); }
     catch (err) { setError(err.message || 'Không tải được dữ liệu.'); } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, [tab, token]);
@@ -43,14 +44,16 @@ export default function Management({ apiBase, token, user, onProductChange, noti
   function editProduct(item) { setEditing(item.id); setForm({ name: item.name, category: item.category, description: item.description, price: String(item.price), wholesale_price: String(item.wholesale_price), unit: item.unit, image: item.image, badge: item.badge || '', is_active: item.is_active }); }
 
   return <View style={styles.root}>
-    <View style={styles.tabs}><Pressable onPress={() => setTab('products')} style={[styles.tab, tab === 'products' && styles.selected]}><Text style={styles.tabText}>Sản phẩm</Text></Pressable>{user.role === 'admin' ? <Pressable onPress={() => setTab('users')} style={[styles.tab, tab === 'users' && styles.selected]}><Text style={styles.tabText}>Tài khoản</Text></Pressable> : null}</View>
+    <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={styles.tabs}><Pressable onPress={() => setTab('products')} style={[styles.tab, tab === 'products' && styles.selected]}><Text style={styles.tabText}>Sản phẩm</Text></Pressable>{user.role === 'admin' ? <><Pressable onPress={() => setTab('orders')} style={[styles.tab, tab === 'orders' && styles.selected]}><Text style={styles.tabText}>Đơn D2C</Text></Pressable><Pressable onPress={() => setTab('wholesale')} style={[styles.tab, tab === 'wholesale' && styles.selected]}><Text style={styles.tabText}>Yêu cầu B2B</Text></Pressable><Pressable onPress={() => setTab('complaints')} style={[styles.tab, tab === 'complaints' && styles.selected]}><Text style={styles.tabText}>Phản ánh</Text></Pressable><Pressable onPress={() => setTab('users')} style={[styles.tab, tab === 'users' && styles.selected]}><Text style={styles.tabText}>Tài khoản</Text></Pressable></> : null}</ScrollView>
+    {['orders', 'wholesale', 'complaints'].includes(tab) && user.role === 'admin' ? <TradeManagement apiBase={apiBase} token={token} kind={tab} /> : null}
+    {['products', 'users'].includes(tab) ?
     <ScrollView keyboardShouldPersistTaps="handled">
       {tab === 'products' ? <View style={styles.panel}><Text style={styles.heading}>{editing ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</Text>
         {[['name','Tên sản phẩm'],['category','Danh mục'],['description','Mô tả'],['price','Giá bán (đ)'],['wholesale_price','Giá sỉ (đ)'],['unit','Đơn vị'],['image','Đường dẫn ảnh'],['badge','Nhãn']].map(([key, label]) => <View key={key} style={styles.field}><Text style={styles.label}>{label}{key === 'badge' ? '' : ' *'}</Text><TextInput value={form[key]} onChangeText={value => setForm({ ...form, [key]: value })} keyboardType={key.includes('price') ? 'numeric' : 'default'} multiline={key === 'description'} style={styles.input} /></View>)}
         <Pressable onPress={() => setForm({ ...form, is_active: !form.is_active })} style={styles.toggle}><Text style={styles.text}>{form.is_active ? '☑ Đang bán' : '☐ Ngừng bán'}</Text></Pressable><View style={styles.actions}><Action text={saving ? 'Đang lưu…' : 'Lưu sản phẩm'} onPress={saveProduct} disabled={saving} />{editing ? <Action text="Hủy sửa" onPress={() => { setEditing(null); setForm(initial); }} secondary /> : null}</View>
         <Text style={styles.heading}>Danh sách sản phẩm</Text>{loading ? <ActivityIndicator color="#183d2b" /> : null}{error ? <Text style={styles.error}>{error}</Text> : null}{products.map(item => <View key={item.id} style={styles.row}><Image source={{ uri: item.image }} style={styles.image} /><View style={styles.grow}><Text style={styles.name}>{item.name}</Text><Text style={styles.text}>{new Intl.NumberFormat('vi-VN').format(item.price)}đ / {item.unit} · {item.is_active ? 'Đang bán' : 'Ngừng bán'}</Text></View><Action text="Sửa" onPress={() => editProduct(item)} secondary /></View>)}
       </View> : <View style={styles.panel}><Text style={styles.heading}>Quản lý tài khoản</Text><Text style={styles.text}>Chọn vai trò và trạng thái. Bạn không thể tự khóa hoặc hạ quyền tài khoản đang dùng.</Text>{loading ? <ActivityIndicator color="#183d2b" /> : null}{error ? <Text style={styles.error}>{error}</Text> : null}{users.map(item => <View key={item.id} style={styles.userCard}><Text style={styles.name}>{item.name}</Text><Text style={styles.text}>{item.email} · {item.is_active ? 'Đang hoạt động' : 'Đã khóa'}</Text><View style={styles.actions}>{roles.map(role => <Pressable key={role} disabled={saving || item.id === user.id} onPress={() => saveUser(item, { role })} style={[styles.role, item.role === role && styles.selected, (saving || item.id === user.id) && styles.disabled]}><Text style={styles.text}>{labels[role]}</Text></Pressable>)}</View><Action text={item.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản'} disabled={saving || item.id === user.id} onPress={() => saveUser(item, { is_active: !item.is_active })} secondary /></View>)}</View>}
-    </ScrollView>
+    </ScrollView> : null}
   </View>;
 }
 
