@@ -2,7 +2,7 @@
 
 Giao diện viết bằng React Native, đóng gói với Expo và Expo Web. Mã nguồn dùng chung cho trình duyệt, Android và iOS. Frontend lấy danh sách sản phẩm và gửi đơn đến Laravel API trong `../backend`.
 
-Backend mã hóa các trường thông tin khách mua và đối tác bằng Laravel AES-256-CBC casts trước khi lưu database. Xem chi tiết và lưu ý bảo vệ `APP_KEY` tại `../backend/README.md`.
+Backend mã hóa các trường thông tin khách mua bằng Laravel AES-256-CBC casts trước khi lưu database. Xem chi tiết và lưu ý bảo vệ `APP_KEY` tại `../backend/README.md`.
 
 ## Yêu cầu
 
@@ -35,7 +35,7 @@ Khách cần đăng ký hoặc đăng nhập để thấy giỏ hàng và đặt
 
 Manager và Admin có mục **Quản trị** sau khi đăng nhập. Manager quản lý sản phẩm; Admin quản lý thêm vai trò và trạng thái tài khoản. Xem `../backend/README.md` để cấp Admin đầu tiên.
 
-Admin cũng có thể xem đơn D2C, yêu cầu báo giá B2B và phản ánh. Phí giao D2C do trại xác nhận theo địa chỉ sau khi khách gửi đơn; báo giá B2B được thỏa thuận riêng. Việc liên hệ khách và ghi nhận khách đồng ý hiện thực hiện thủ công.
+Admin cũng có thể xem đơn D2C và phản ánh. Phí giao D2C do trại xác nhận theo địa chỉ sau khi khách gửi đơn. Việc liên hệ khách và ghi nhận khách đồng ý hiện thực hiện thủ công.
 
 ## Chạy backend và frontend trên máy tính
 

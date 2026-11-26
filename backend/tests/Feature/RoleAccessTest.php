@@ -6,7 +6,6 @@ use App\Models\Complaint;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\WholesaleLead;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -45,7 +44,7 @@ class RoleAccessTest extends TestCase
     {
         [$managerToken] = $this->register('manager@example.com', 'manager');
         [$userToken, $user] = $this->register('user@example.com');
-        $product = ['name' => 'Gà ri', 'category' => 'Gà tươi', 'description' => 'Sản phẩm', 'price' => 100000, 'wholesale_price' => 90000, 'unit' => 'kg', 'image' => 'https://example.com/ga.jpg', 'is_active' => true];
+        $product = ['name' => 'Gà ri', 'category' => 'Gà tươi', 'description' => 'Sản phẩm', 'price' => 100000, 'unit' => 'kg', 'image' => 'https://example.com/ga.jpg', 'is_active' => true];
         $created = $this->withToken($managerToken)->postJson('/api/management/products', $product)->assertCreated();
         $id = $created->json('id');
         $this->withToken($userToken)->putJson('/api/management/products/'.$id, $product)->assertForbidden();
@@ -72,24 +71,6 @@ class RoleAccessTest extends TestCase
         $this->artisan('app:assign-admin', ['email' => 'OWNER@example.com'])->assertSuccessful();
         $this->assertSame('admin', $user->refresh()->role);
         $this->artisan('app:assign-admin', ['email' => 'missing@example.com'])->assertFailed();
-    }
-
-    public function test_only_admin_can_review_b2b_requests_and_save_an_encrypted_quote(): void
-    {
-        [$userToken] = $this->register('user@example.com');
-        [$managerToken] = $this->register('manager@example.com', 'manager');
-        [$adminToken] = $this->register('admin@example.com', 'admin');
-        $input = ['business_name' => 'Bếp ăn', 'contact_name' => 'An', 'phone' => '0900000000', 'monthly_volume' => '50 kg', 'message' => 'Gà tươi', 'delivery_location' => 'Đắk Lắk', 'purchase_frequency' => 'Hàng tuần'];
-        $response = $this->postJson('/api/wholesale', $input)->assertCreated()->assertJsonStructure(['reference']);
-        $lead = WholesaleLead::where('reference', $response->json('reference'))->firstOrFail();
-        $this->getJson('/api/management/wholesale')->assertUnauthorized();
-        $this->withToken($userToken)->getJson('/api/management/wholesale')->assertForbidden();
-        $this->withToken($managerToken)->getJson('/api/management/wholesale')->assertForbidden();
-        $this->withToken($adminToken)->getJson('/api/management/wholesale')->assertOk()->assertJsonFragment(['reference' => $lead->reference]);
-        $this->withToken($adminToken)->putJson('/api/management/wholesale/'.$lead->id, ['status' => 'Đã báo giá', 'quote_details' => ''])->assertUnprocessable();
-        $quote = 'Giá thỏa thuận; giao hàng hằng tuần';
-        $this->withToken($adminToken)->putJson('/api/management/wholesale/'.$lead->id, ['status' => 'Đã báo giá', 'quote_details' => $quote])->assertOk()->assertJsonPath('quote_details', $quote);
-        $this->assertNotSame($quote, DB::table('wholesale_leads')->where('id', $lead->id)->value('quote_details'));
     }
 
     public function test_order_shipping_requires_admin_confirmation_and_d2c_channel(): void

@@ -46,13 +46,12 @@ Các endpoint:
 
 - `GET /api/products` — danh sách; có thể lọc bằng `?category=Gà%20tươi` hoặc tìm bằng `?q=gà`.
 - `POST /api/checkout` — tạo đơn hàng và các dòng sản phẩm.
-- `POST /api/wholesale` — ghi yêu cầu hợp tác/giá sỉ.
 - `POST /api/register`, `POST /api/login` — đăng ký và đăng nhập, trả về bearer token.
 - `GET /api/me`, `POST /api/logout` — đọc thông tin tài khoản hoặc thu hồi token hiện tại; cần header `Authorization: Bearer <token>`.
 
 `POST /api/checkout` yêu cầu bearer token hợp lệ. Tên và email tài khoản được mã hóa AES; mật khẩu được băm. Email được tra cứu thông qua giá trị HMAC dựa trên `APP_KEY`: khi xoay khóa, cần chuyển đổi lại chỉ mục này cùng dữ liệu mã hóa; chỉ thiết lập `APP_PREVIOUS_KEYS` không tự cập nhật chỉ mục đăng nhập.
 
-Đơn D2C mới chỉ có tiền hàng; `shipping_fee` và `total` để trống cho đến khi Admin nhập phí sau khi liên hệ khách. Admin phải xác nhận khách đồng ý trước khi đánh dấu đơn đã xác nhận. Yêu cầu B2B được cấp mã và lưu riêng; Admin có thể ghi báo giá và trạng thái trong khu vực quản trị. Báo giá, thay đổi đơn và phản ánh đều cần được trại thông báo cho khách qua kênh liên lạc riêng; website chưa gửi thông báo tự động.
+Đơn D2C mới chỉ có tiền hàng; `shipping_fee` và `total` để trống cho đến khi Admin nhập phí sau khi liên hệ khách. Admin phải xác nhận khách đồng ý trước khi đánh dấu đơn đã xác nhận. Thay đổi đơn và phản ánh đều cần được trại thông báo cho khách qua kênh liên lạc riêng; website chưa gửi thông báo tự động.
 
 ## Phân quyền User, Manager và Admin
 
@@ -104,7 +103,7 @@ php artisan migrate:status       # xem migration nào đã chạy
 php artisan optimize:clear       # xóa cache cấu hình/route/view
 ```
 
-Lưu ý: `migrate --seed` dùng `updateOrCreate` cho sản phẩm mẫu, nên có thể chạy lại mà không nhân đôi sản phẩm. Đơn và yêu cầu đối tác đã tạo sẽ vẫn được giữ lại.
+Lưu ý: `migrate --seed` dùng `updateOrCreate` cho sản phẩm mẫu, nên có thể chạy lại mà không nhân đôi sản phẩm. Đơn và dữ liệu cũ đã tạo sẽ vẫn được giữ lại.
 
 ## Mã hóa dữ liệu cá nhân bằng AES
 
@@ -113,7 +112,7 @@ Laravel dùng encrypted Eloquent casts để mã hóa dữ liệu trước khi g
 Các trường được mã hóa:
 
 - `orders`: `customer_name`, `phone`, `email`, `address`, `note`.
-- `wholesale_leads`: `business_name`, `contact_name`, `phone`, `email`, `message`.
+- Dữ liệu yêu cầu mua sỉ cũ vẫn được giữ trong database để tránh mất dữ liệu; API tiếp nhận và quản lý đã ngừng hoạt động.
 
 Migration `2026_11_23_000005_encrypt_personal_data` đổi các cột này sang `TEXT` để chứa ciphertext và mã hóa dữ liệu cũ đang có. Khi cài mới, các cột được tạo đúng kiểu ngay từ đầu. Chạy migration trước khi khởi động ứng dụng sau khi cập nhật code:
 

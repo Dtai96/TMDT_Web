@@ -2,8 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { policies } from './policies';
 
-export default function PolicyPage({ selectedId, onSelect, onHome, onComplaint, onWholesale }) {
+export default function PolicyPage({ selectedId, onSelect, onHome, onComplaint }) {
   const scroll = useRef(null);
+  const layoutY = useRef(0);
+  const contentY = useRef(0);
+  const scrollToContent = useRef(false);
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const current = policies.find(policy => policy.id === selectedId) || policies[0];
@@ -14,17 +17,30 @@ export default function PolicyPage({ selectedId, onSelect, onHome, onComplaint, 
     return () => handler.remove();
   }, [onHome]);
 
-  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [current.id]);
+  useEffect(() => {
+    if (!scrollToContent.current) return;
+    scrollToContent.current = false;
+    const frame = requestAnimationFrame(() => {
+      scroll.current?.scrollTo({ y: Math.max(0, layoutY.current + contentY.current - 12), animated: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [current.id]);
+
+  function selectPolicy(id) {
+    if (id === current.id) return;
+    scrollToContent.current = !wide;
+    onSelect(id);
+  }
 
   return <View style={styles.root}>
     <View style={[styles.header, !wide && styles.headerMobile]}><Pressable accessibilityRole="button" onPress={onHome} style={styles.brand}><View style={styles.brandMark}><Text style={styles.markText}>SM</Text></View><View><Text style={styles.brandTitle}>TRẠI GÀ SIÊU MÔN</Text><Text style={styles.brandSub}>TỪ TRẠI ĐẾN BÀN ĂN</Text></View></Pressable><Pressable accessibilityRole="button" onPress={onHome}><Text style={styles.back}>← Trở về cửa hàng</Text></Pressable></View>
     <ScrollView ref={scroll} contentContainerStyle={styles.scroll}>
-      <View style={styles.hero}><Text style={styles.eyebrow}>TRẠI GÀ SIÊU MÔN / CHÍNH SÁCH</Text><Text style={[styles.title, !wide && styles.titleMobile]}>Mua hàng an tâm, <Text style={styles.accent}>thông tin rõ ràng.</Text></Text><Text style={styles.intro}>Tìm hiểu điều kiện đặt hàng trực tiếp D2C, hợp tác B2B và cách trại tiếp nhận, xử lý phản hồi của khách hàng.</Text></View>
+      <View style={styles.hero}><Text style={styles.eyebrow}>TRẠI GÀ SIÊU MÔN / CHÍNH SÁCH</Text><Text style={[styles.title, !wide && styles.titleMobile]}>Mua hàng an tâm, <Text style={styles.accent}>thông tin rõ ràng.</Text></Text><Text style={styles.intro}>Tìm hiểu điều kiện đặt hàng trực tiếp D2C và cách trại tiếp nhận, xử lý phản hồi của khách hàng.</Text></View>
       {/* <View style={styles.notice}><Text style={styles.noticeTitle}>Thông tin áp dụng</Text><Text style={styles.noticeText}>Đây là nội dung dự kiến cho website demo. Giá, phí giao hàng, thời hạn xử lý và thông tin liên hệ chính thức cần được trại xác nhận trước khi áp dụng.</Text></View> */}
-      <View style={[styles.layout, wide && styles.layoutWide]}><View style={[styles.menu, wide && styles.menuWide]}><Text style={styles.menuLabel}>DANH MỤC CHÍNH SÁCH</Text>{policies.map((item, index) => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: item.id === current.id }} onPress={() => onSelect(item.id)} style={[styles.menuItem, item.id === current.id && styles.menuActive]}><Text style={[styles.menuNumber, item.id === current.id && styles.menuActiveText]}>{String(index + 1).padStart(2, '0')}</Text><Text style={[styles.menuText, item.id === current.id && styles.menuActiveText]}>{item.title}</Text><Text style={styles.menuArrow}>→</Text></Pressable>)}</View>
-        <View style={styles.content}><Text style={styles.contentEyebrow}>CHÍNH SÁCH NHÀ MÔN</Text><Text style={styles.contentTitle}>{current.title}</Text><Text style={styles.contentIntro}>{current.body}</Text><View style={styles.divider} />{current.sections.map(([heading, body], index) => <View style={styles.section} key={heading}><Text style={styles.sectionLabel}>{String(index + 1).padStart(2, '0')} / {heading}</Text><Text style={styles.body}>{body}</Text></View>)}<View style={styles.help}><Text style={styles.helpTitle}>Cần hỗ trợ thêm?</Text><Text style={styles.helpBody}>Gửi thông tin để trại tiếp nhận phản ánh hoặc trao đổi về nhu cầu mua hàng của bạn.</Text><View style={styles.actions}><Pressable accessibilityRole="button" style={styles.primary} onPress={onComplaint}><Text style={styles.primaryText}>Gửi phản ánh  →</Text></Pressable><Pressable accessibilityRole="button" style={styles.secondary} onPress={onWholesale}><Text style={styles.secondaryText}>Yêu cầu báo giá B2B  ↗</Text></Pressable></View></View></View>
+      <View style={[styles.layout, wide && styles.layoutWide]} onLayout={event => { layoutY.current = event.nativeEvent.layout.y; }}><View style={[styles.menu, wide && styles.menuWide]}><Text style={styles.menuLabel}>DANH MỤC CHÍNH SÁCH</Text>{policies.map((item, index) => <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: item.id === current.id }} onPress={() => selectPolicy(item.id)} style={[styles.menuItem, item.id === current.id && styles.menuActive]}><Text style={[styles.menuNumber, item.id === current.id && styles.menuActiveText]}>{String(index + 1).padStart(2, '0')}</Text><Text style={[styles.menuText, item.id === current.id && styles.menuActiveText]}>{item.title}</Text><Text style={styles.menuArrow}>→</Text></Pressable>)}</View>
+        <View style={styles.content} onLayout={event => { contentY.current = event.nativeEvent.layout.y; }}><Text style={styles.contentEyebrow}>CHÍNH SÁCH NHÀ MÔN</Text><Text style={styles.contentTitle}>{current.title}</Text><Text style={styles.contentIntro}>{current.body}</Text><View style={styles.divider} />{current.sections.map(([heading, body], index) => <View style={styles.section} key={heading}><Text style={styles.sectionLabel}>{String(index + 1).padStart(2, '0')} / {heading}</Text><Text style={styles.body}>{body}</Text></View>)}<View style={styles.help}><Text style={styles.helpTitle}>Cần hỗ trợ thêm?</Text><Text style={styles.helpBody}>Gửi thông tin để trại tiếp nhận phản ánh hoặc trao đổi về nhu cầu mua hàng của bạn.</Text><View style={styles.actions}><Pressable accessibilityRole="button" style={styles.primary} onPress={onComplaint}><Text style={styles.primaryText}>Gửi phản ánh  →</Text></Pressable></View></View></View>
       </View>
-      <View style={styles.footer}><Text style={styles.footerBrand}>TRẠI GÀ SIÊU MÔN</Text><Text style={styles.footerCopy}>Đặt hàng trực tiếp D2C · Hợp tác mua sỉ B2B</Text><Pressable onPress={onHome}><Text style={styles.footerLink}>Trở về cửa hàng →</Text></Pressable></View>
+      <View style={styles.footer}><Text style={styles.footerBrand}>TRẠI GÀ SIÊU MÔN</Text><Text style={styles.footerCopy}>Đặt hàng trực tiếp từ trại đến gia đình</Text><Pressable onPress={onHome}><Text style={styles.footerLink}>Trở về cửa hàng →</Text></Pressable></View>
     </ScrollView>
   </View>;
 }

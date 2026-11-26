@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Complaint;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\WholesaleLead;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -55,7 +54,7 @@ class StoreController extends Controller
             $lineTotal = $price * $item['quantity'];
             $subtotal += $lineTotal;
             if ($subtotal > 3000000000) {
-                throw ValidationException::withMessages(['items' => 'Giá trị đơn hàng vượt giới hạn. Vui lòng gửi yêu cầu báo giá B2B.']);
+                throw ValidationException::withMessages(['items' => 'Giá trị đơn hàng vượt giới hạn. Vui lòng giảm số lượng hoặc liên hệ trại.']);
             }
             $lines[] = ['product_id' => $product->id, 'product_name' => $product->name, 'quantity' => $item['quantity'], 'unit_price' => $price, 'line_total' => $lineTotal];
         }
@@ -75,19 +74,6 @@ class StoreController extends Controller
         });
 
         return response()->json(['message' => 'Đã tiếp nhận đơn. Trại sẽ xác nhận phí giao và tổng tiền.', 'code' => $order->code, 'subtotal' => $order->subtotal, 'shipping_fee' => null, 'total' => null], 201);
-    }
-
-    public function wholesale(Request $request)
-    {
-        $data = $request->validate([
-            'business_name' => ['required', 'string', 'max:160'], 'contact_name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:20'], 'email' => ['nullable', 'email', 'max:160'],
-            'monthly_volume' => ['required', 'string', 'max:80'], 'message' => ['required', 'string', 'max:1000'],
-            'delivery_location' => ['required', 'string', 'max:255'], 'purchase_frequency' => ['required', 'string', 'max:100'],
-        ]);
-        $lead = WholesaleLead::create($data + ['reference' => 'B2B'.now()->format('ymd').strtoupper(Str::random(6))]);
-
-        return response()->json(['message' => 'Đã tiếp nhận yêu cầu báo giá. Trại sẽ liên hệ để trao đổi.', 'reference' => $lead->reference], 201);
     }
 
     public function complaint(Request $request)

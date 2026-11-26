@@ -6,7 +6,6 @@ use App\Models\Complaint;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\WholesaleLead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +22,7 @@ class ManagementController extends Controller
     public function storeProduct(Request $request): JsonResponse
     {
         $data = $this->productData($request);
+        $data['wholesale_price'] = $data['price']; // Preserve the legacy non-null column for existing databases.
         $data['slug'] = Str::slug($data['name']).'-'.Str::lower(Str::random(8));
 
         return response()->json(Product::create($data), 201);
@@ -49,7 +49,6 @@ class ManagementController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'description' => ['required', 'string', 'max:5000'],
             'price' => ['required', 'integer', 'min:0', 'max:1000000000'],
-            'wholesale_price' => ['required', 'integer', 'min:0', 'max:1000000000'],
             'unit' => ['required', 'string', 'max:60'],
             'image' => ['required', 'url', 'max:255'],
             'badge' => ['nullable', 'string', 'max:100'],
@@ -84,11 +83,6 @@ class ManagementController extends Controller
         return response()->json($order->load('items'));
     }
 
-    public function wholesaleRequests(): JsonResponse
-    {
-        return response()->json(WholesaleLead::latest('id')->limit(100)->get());
-    }
-
     public function complaints(): JsonResponse
     {
         return response()->json(Complaint::latest('id')->limit(100)->get());
@@ -106,20 +100,6 @@ class ManagementController extends Controller
         $complaint->update($data);
 
         return response()->json($complaint->refresh());
-    }
-
-    public function updateWholesaleRequest(Request $request, WholesaleLead $lead): JsonResponse
-    {
-        $data = $request->validate([
-            'status' => ['required', Rule::in(['Mới tiếp nhận', 'Đang trao đổi', 'Đã báo giá', 'Hoàn tất', 'Đã hủy'])],
-            'quote_details' => ['nullable', 'string', 'max:5000'],
-        ]);
-        if (in_array($data['status'], ['Đã báo giá', 'Hoàn tất'], true) && ! trim($data['quote_details'] ?? '')) {
-            return response()->json(['message' => 'Vui lòng ghi nội dung báo giá đã trao đổi.'], 422);
-        }
-        $lead->update($data);
-
-        return response()->json($lead->refresh());
     }
 
     public function updateUser(Request $request, User $user): JsonResponse

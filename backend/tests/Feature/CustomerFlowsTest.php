@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Complaint;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\WholesaleLead;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -25,13 +24,9 @@ class CustomerFlowsTest extends TestCase
         $this->assertNotSame('Buổi sáng', DB::table('orders')->value('desired_time'));
     }
 
-    public function test_wholesale_requires_location_and_frequency_and_encrypts_them(): void
+    public function test_wholesale_endpoint_is_no_longer_available(): void
     {
-        $input = ['business_name' => 'Bếp ăn', 'contact_name' => 'An', 'phone' => '0900000000', 'monthly_volume' => '50 kg', 'message' => 'Cần gà tươi'];
-        $this->postJson('/api/wholesale', $input)->assertUnprocessable()->assertJsonValidationErrors(['delivery_location', 'purchase_frequency']);
-        $this->postJson('/api/wholesale', $input + ['delivery_location' => 'Đắk Lắk', 'purchase_frequency' => 'Hàng tuần'])->assertCreated();
-        $this->assertSame('Đắk Lắk', WholesaleLead::firstOrFail()->delivery_location);
-        $this->assertNotSame('Đắk Lắk', DB::table('wholesale_leads')->value('delivery_location'));
+        $this->postJson('/api/wholesale', [])->assertNotFound();
     }
 
     public function test_checkout_rejects_duplicate_products_and_excessive_totals(): void
