@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Complaint;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\User;
+use Database\Seeders\DemoCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -12,6 +14,40 @@ use Tests\TestCase;
 class CustomerFlowsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_customer_receives_order_reference_and_admin_can_see_new_order(): void
+    {
+        $product = Product::create(['name' => 'Gà', 'slug' => 'ga', 'category' => 'Gà tươi', 'description' => 'Mẫu', 'price' => 100000, 'wholesale_price' => 90000, 'unit' => 'kg', 'image' => 'sample', 'is_active' => true]);
+        $customer = $this->postJson('/api/register', ['name' => 'Khách', 'email' => 'customer@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'])->assertCreated()->json('token');
+        $admin = $this->postJson('/api/register', ['name' => 'Quản trị', 'email' => 'admin@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'])->assertCreated();
+        User::whereKey($admin->json('user.id'))->update(['role' => 'admin']);
+
+        $result = $this->withToken($customer)->postJson('/api/checkout', [
+            'customer_name' => 'An', 'phone' => '0900000000', 'address' => 'Đắk Lắk',
+            'channel' => 'D2C', 'payment_method' => 'cod', 'items' => [['id' => $product->id, 'quantity' => 1]],
+        ])->assertCreated()->assertJsonStructure(['message', 'code']);
+
+        $this->assertDatabaseHas('orders', ['code' => $result->json('code'), 'status' => 'Chờ xác nhận']);
+        $this->withToken($admin->json('token'))->getJson('/api/management/orders')
+            ->assertOk()->assertJsonFragment(['code' => $result->json('code'), 'customer_name' => 'An']);
+        $this->withToken($customer)->getJson('/api/management/orders')->assertForbidden();
+    }
+
+    public function test_demo_catalog_covers_all_categories_and_segments_without_overwriting_products(): void
+    {
+        $existing = Product::create(['name' => 'Sản phẩm đã sửa', 'slug' => 'demo-uc-ga-500g', 'category' => 'Gà tươi', 'segment' => 'economy', 'description' => 'Giữ nguyên', 'price' => 123000, 'wholesale_price' => 123000, 'unit' => 'khay', 'image' => 'sample', 'is_active' => true]);
+
+        $this->seed(DemoCatalogSeeder::class);
+        $this->seed(DemoCatalogSeeder::class);
+
+        $this->assertDatabaseCount('products', 12);
+        $this->assertSame(123000, $existing->refresh()->price);
+        foreach (['Gà tươi', 'Trứng & thực phẩm', 'Chế biến sẵn', 'Combo tiết kiệm'] as $category) {
+            foreach (['economy', 'standard', 'premium'] as $segment) {
+                $this->assertDatabaseHas('products', ['category' => $category, 'segment' => $segment]);
+            }
+        }
+    }
 
     public function test_checkout_saves_encrypted_delivery_preferences_and_server_price(): void
     {

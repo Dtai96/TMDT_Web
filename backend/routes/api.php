@@ -13,6 +13,8 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10
 Route::middleware(AuthenticateApiToken::class)->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/rewards', [StoreController::class, 'rewards']);
+    Route::post('/checkout/preview', [StoreController::class, 'preview']);
     Route::post('/checkout', [StoreController::class, 'checkout'])->name('checkout');
     Route::middleware(RequireRole::class.':admin,manager')->prefix('management')->group(function () {
         Route::get('/products', [ManagementController::class, 'products']);

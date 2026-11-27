@@ -35,6 +35,8 @@ Khách cần đăng ký hoặc đăng nhập để thấy giỏ hàng và đặt
 
 Manager và Admin có mục **Quản trị** sau khi đăng nhập. Manager quản lý sản phẩm; Admin quản lý thêm vai trò và trạng thái tài khoản. Xem `../backend/README.md` để cấp Admin đầu tiên.
 
+Manager hoặc Admin có thể gán phân khúc Tiết kiệm, Tiêu chuẩn hoặc Cao cấp cho sản phẩm; khách có thể lọc theo phân khúc. Sản phẩm cũ chưa phân loại vẫn hiện trong danh sách chung. Giỏ hàng hiển thị ưu đãi demo, điểm và voucher theo tài khoản; backend kiểm tra điều kiện và tính tiền. Xem mức demo và lưu ý vận hành trong `../backend/README.md`.
+
 Admin cũng có thể xem đơn D2C và phản ánh. Phí giao D2C do trại xác nhận theo địa chỉ sau khi khách gửi đơn. Việc liên hệ khách và ghi nhận khách đồng ý hiện thực hiện thủ công.
 
 ## Chạy backend và frontend trên máy tính

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Complaint;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\RewardVoucher;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,7 @@ class ManagementController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:180'],
             'category' => ['required', 'string', 'max:100'],
+            'segment' => ['nullable', Rule::in(['economy', 'standard', 'premium'])],
             'description' => ['required', 'string', 'max:5000'],
             'price' => ['required', 'integer', 'min:0', 'max:1000000000'],
             'unit' => ['required', 'string', 'max:60'],
@@ -72,15 +74,44 @@ class ManagementController extends Controller
             'shipping_fee' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'status' => ['required', Rule::in(['Chờ xác nhận', 'Chờ khách đồng ý', 'Đã xác nhận', 'Đang giao', 'Đã giao', 'Đã hủy'])],
         ]);
-        if (in_array($data['status'], ['Đã xác nhận', 'Đang giao', 'Đã giao'], true) && ($data['shipping_fee'] ?? null) === null) {
-            return response()->json(['message' => 'Cần nhập phí giao đã thỏa thuận trước khi xác nhận đơn.'], 422);
-        }
-        $order->shipping_fee = $data['shipping_fee'] ?? null;
-        $order->total = $order->shipping_fee === null ? null : $order->subtotal + $order->shipping_fee;
-        $order->status = $data['status'];
-        $order->save();
 
-        return response()->json($order->load('items'));
+        return DB::transaction(function () use ($data, $order) {
+            if ($order->user_id) {
+                User::whereKey($order->user_id)->lockForUpdate()->first();
+            }
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if (in_array($order->status, ['Đã giao', 'Đã hủy'], true) && $data['status'] !== $order->status) {
+                return response()->json(['message' => 'Đơn đã giao hoặc đã hủy không thể đổi trạng thái.'], 422);
+            }
+            if (in_array($order->status, ['Đã giao', 'Đã hủy'], true)) {
+                return response()->json($order->load('items'));
+            }
+            if (in_array($data['status'], ['Đã xác nhận', 'Đang giao', 'Đã giao'], true) && ($data['shipping_fee'] ?? null) === null) {
+                return response()->json(['message' => 'Cần nhập phí giao đã thỏa thuận trước khi xác nhận đơn.'], 422);
+            }
+            if ($order->free_shipping_eligible && ($data['shipping_fee'] ?? null) !== null && (int) $data['shipping_fee'] !== 0) {
+                return response()->json(['message' => 'Đơn đủ điều kiện miễn phí giao phải có phí giao bằng 0.'], 422);
+            }
+            $order->shipping_fee = $data['shipping_fee'] ?? null;
+            $order->total = $order->shipping_fee === null ? null : $order->subtotal - $order->discount_amount + $order->shipping_fee;
+            if ($data['status'] === 'Đã giao') {
+                $order->delivered_at = now();
+                $order->points_awarded = intdiv($order->subtotal - $order->discount_amount, config('promotions.points_per_amount'));
+                if ($order->user_id) {
+                    RewardVoucher::firstOrCreate(['source_order_id' => $order->id], [
+                        'user_id' => $order->user_id,
+                        'code' => 'MON'.strtoupper(Str::random(12)),
+                        'amount' => config('promotions.return_voucher_amount'),
+                    ]);
+                }
+            } elseif ($data['status'] === 'Đã hủy') {
+                RewardVoucher::where('used_order_id', $order->id)->update(['used_order_id' => null]);
+            }
+            $order->status = $data['status'];
+            $order->save();
+
+            return response()->json($order->load('items'));
+        });
     }
 
     public function complaints(): JsonResponse

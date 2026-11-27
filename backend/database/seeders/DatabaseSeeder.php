@@ -25,8 +25,19 @@ class DatabaseSeeder extends Seeder
             ['Chả gà nhà làm', 'cha-ga-nha-lam', 'Chế biến sẵn', 'Chả gà mềm thơm từ thịt gà tươi của trại, không chất bảo quản.', 135000, 115000, 'gói 500g', 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=900&q=85', 'NHÀ LÀM'],
             ['Combo bữa cơm nhà', 'combo-bua-com-nha', 'Combo tiết kiệm', 'Gà nguyên con, trứng gà ta và gia vị cho bữa cơm tròn vị.', 299000, 259000, 'combo', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85', 'TIẾT KIỆM'],
         ];
+        $segments = [
+            'ga-ri-tha-vuon' => 'standard', 'ga-doi-sieu-mon' => 'premium',
+            'trung-ga-ta' => 'economy', 'ga-u-muoi-hoa-tieu' => 'premium',
+            'dui-ga-ri' => 'economy', 'canh-ga-tha-vuon' => 'economy',
+            'cha-ga-nha-lam' => 'standard', 'combo-bua-com-nha' => 'standard',
+        ];
         foreach ($products as [$name, $slug, $category, $description, $price, $wholesale, $unit, $image, $badge]) {
-            Product::updateOrCreate(['slug' => $slug], compact('name', 'slug', 'category', 'description', 'price', 'unit', 'image', 'badge') + ['wholesale_price' => $wholesale, 'is_active' => true]);
+            $product = Product::updateOrCreate(['slug' => $slug], compact('name', 'slug', 'category', 'description', 'price', 'unit', 'image', 'badge') + ['wholesale_price' => $wholesale, 'is_active' => true]);
+            if ($product->wasRecentlyCreated) {
+                $product->update(['segment' => $segments[$slug]]);
+            }
         }
+
+        $this->call(DemoCatalogSeeder::class);
     }
 }

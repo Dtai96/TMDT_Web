@@ -14,6 +14,7 @@ export default function TradeManagement({ apiBase, token, kind }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const endpoint = kind === 'orders' ? 'orders' : 'complaints';
 
   async function request(path, options = {}) {
@@ -22,12 +23,29 @@ export default function TradeManagement({ apiBase, token, kind }) {
     if (!response.ok) throw new Error(Object.values(result.errors || {}).flat()[0] || result.message || 'Không thể thực hiện yêu cầu.');
     return result;
   }
-  async function load() {
-    setLoading(true); setError('');
-    try { setRecords(await request(endpoint)); } catch (err) { setError(err.message || 'Không tải được dữ liệu.'); }
-    finally { setLoading(false); }
-  }
-  useEffect(() => { setSelected(null); setNotice(''); load(); }, [kind, token]);
+  useEffect(() => {
+    let active = true;
+    let inFlight = false;
+    const controller = new AbortController();
+    async function refresh(showLoading = false) {
+      if (inFlight) return;
+      inFlight = true;
+      if (showLoading) setLoading(true);
+      try {
+        const result = await request(endpoint, { signal: controller.signal });
+        if (active) { setRecords(result); setError(''); }
+      } catch (err) {
+        if (active && err.name !== 'AbortError') setError(err.message || 'Không tải được dữ liệu.');
+      } finally {
+        inFlight = false;
+        if (active && showLoading) setLoading(false);
+      }
+    }
+    setSelected(null); setNotice(''); setRecords([]); setError('');
+    refresh(true);
+    const timer = setInterval(() => refresh(), 10000);
+    return () => { active = false; controller.abort(); clearInterval(timer); };
+  }, [kind, token, refreshKey]);
   function select(record) {
     setSelected(record); setStatus(record.status); setFee(record.shipping_fee == null ? '' : String(record.shipping_fee)); setQuote(record.resolution || ''); setError(''); setNotice('');
   }
@@ -44,19 +62,20 @@ export default function TradeManagement({ apiBase, token, kind }) {
   return <ScrollView style={s.scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={s.container}>
     <Text style={s.heading}>{kind === 'orders' ? 'Đơn hàng D2C' : 'Phản ánh và khiếu nại'}</Text>
     <Text style={s.muted}>{kind === 'orders' ? 'Chỉ chuyển trạng thái đã xác nhận sau khi khách đồng ý phí giao và tổng tiền.' : 'Ghi lại quá trình xác minh và liên hệ khách để thông báo phương án xử lý.'}</Text>
+    {!selected ? <Pressable accessibilityRole="button" disabled={loading} onPress={() => setRefreshKey(value => value + 1)}><Text style={s.link}>↻ Làm mới danh sách</Text></Pressable> : null}
     {loading ? <ActivityIndicator color="#183d2b" /> : null}{error ? <Text style={s.error}>{error}</Text> : null}{notice ? <Text style={s.notice}>{notice}</Text> : null}
     {selected ? <View style={s.detail}>
       <Pressable onPress={() => { setSelected(null); setError(''); setNotice(''); }}><Text style={s.link}>← Quay lại danh sách</Text></Pressable>
       {kind === 'orders' ? <>
         <Text style={s.heading}>{selected.code}</Text><Text style={s.body}>Khách: {selected.customer_name} · {selected.phone}</Text><Text style={s.body}>Địa chỉ: {selected.address}</Text><Text style={s.body}>Mong muốn: {selected.desired_time || 'Chưa ghi'}</Text><Text style={s.body}>Thanh toán: {selected.payment_method === 'cod' ? 'COD' : 'Chuyển khoản sau xác nhận'}</Text><Text style={s.body}>Ghi chú: {selected.note || 'Không có'}</Text>
         {(selected.items || []).map(item => <Text key={item.id} style={s.body}>{item.product_name} × {item.quantity} · {money(item.line_total)}</Text>)}
-        <Text style={s.body}>Tiền hàng: {money(selected.subtotal)}</Text><Text style={s.label}>Phí giao hàng đã trao đổi (đ)</Text><TextInput value={fee} onChangeText={setFee} keyboardType="numeric" placeholder="Để trống nếu chưa xác nhận" style={s.input} /><Text style={s.muted}>Tổng khi phí được ghi nhận: {fee !== '' && /^\d+$/.test(fee) ? money(selected.subtotal + Number(fee)) : 'Chưa xác định'}</Text>
+        <Text style={s.body}>Tiền hàng: {money(selected.subtotal)}</Text><Text style={s.body}>Ưu đãi: {selected.discount_label || 'Không có'} · −{money(selected.discount_amount || 0)}</Text>{selected.free_shipping_eligible ? <Text style={s.notice}>Đủ điều kiện miễn phí giao nếu trại xác nhận giao được; nhập phí 0đ.</Text> : null}<Text style={s.label}>Phí giao hàng đã trao đổi (đ)</Text><TextInput value={fee} onChangeText={setFee} keyboardType="numeric" placeholder="Để trống nếu chưa xác nhận" style={s.input} /><Text style={s.muted}>Tổng khi phí được ghi nhận: {fee !== '' && /^\d+$/.test(fee) ? money(selected.subtotal - (selected.discount_amount || 0) + Number(fee)) : 'Chưa xác định'}</Text>
       </> : <>
         <Text style={s.heading}>{selected.code}</Text><Text style={s.body}>Khách: {selected.name} · {selected.phone}</Text><Text style={s.body}>Mã đơn: {selected.order_code || 'Chưa ghi'}</Text><Text style={s.body}>Thời điểm nhận: {selected.received_at || 'Chưa ghi'}</Text><Text style={s.body}>Nội dung: {selected.description}</Text><Text style={s.label}>Phương án và kết quả xử lý</Text><TextInput value={quote} onChangeText={setQuote} multiline placeholder="Ghi lại việc xác minh và phương án đã trao đổi…" style={[s.input, s.multiline]} />
       </>}
       <Text style={s.label}>Trạng thái</Text><View style={s.statuses}>{(kind === 'orders' ? orderStatuses : complaintStatuses).map(item => <Pressable key={item} onPress={() => setStatus(item)} style={[s.status, item === status && s.selected]}><Text style={s.body}>{item}</Text></Pressable>)}</View><Pressable disabled={loading} onPress={save} style={s.button}><Text style={s.buttonText}>Lưu xử lý</Text></Pressable>
     </View> : <>
-      {!loading && records.length === 0 ? <Text style={s.muted}>Chưa có dữ liệu.</Text> : null}
+      {!loading && !error && records.length === 0 ? <Text style={s.muted}>{kind === 'orders' ? 'Chưa có đơn hàng. Danh sách tự cập nhật sau mỗi 10 giây.' : 'Chưa có dữ liệu.'}</Text> : null}
       {records.map(record => <Pressable key={record.id} onPress={() => select(record)} style={s.item}><Text style={s.name}>{kind === 'orders' || kind === 'complaints' ? record.code : (record.reference || `Yêu cầu #${record.id}`)}</Text><Text style={s.body}>{kind === 'orders' ? record.customer_name : record.name} · {record.status}</Text><Text style={s.link}>Xem và xử lý →</Text></Pressable>)}
     </>}
   </ScrollView>;

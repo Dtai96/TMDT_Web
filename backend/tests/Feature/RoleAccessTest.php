@@ -54,6 +54,18 @@ class RoleAccessTest extends TestCase
         $this->withToken($managerToken)->putJson('/api/management/users/'.$user->id, ['role' => 'admin', 'is_active' => true])->assertForbidden();
     }
 
+    public function test_product_segment_can_be_managed_and_is_visible_to_customers(): void
+    {
+        [$managerToken] = $this->register('manager@example.com', 'manager');
+        $product = ['name' => 'Gà ri', 'category' => 'Gà tươi', 'description' => 'Sản phẩm', 'price' => 100000, 'unit' => 'kg', 'image' => 'https://example.com/ga.jpg', 'is_active' => true];
+        $this->withToken($managerToken)->postJson('/api/management/products', $product + ['segment' => 'invalid'])->assertUnprocessable()->assertJsonValidationErrors('segment');
+        $created = $this->withToken($managerToken)->postJson('/api/management/products', $product + ['segment' => 'economy'])->assertCreated()->assertJsonPath('segment', 'economy');
+        $id = $created->json('id');
+        $this->getJson('/api/products')->assertOk()->assertJsonFragment(['id' => $id, 'segment' => 'economy']);
+        $this->withToken($managerToken)->putJson('/api/management/products/'.$id, $product + ['segment' => 'premium'])->assertOk()->assertJsonPath('segment', 'premium');
+        $this->withToken($managerToken)->putJson('/api/management/products/'.$id, $product + ['segment' => null])->assertOk()->assertJsonPath('segment', null);
+    }
+
     public function test_admin_can_change_and_disable_accounts_and_revokes_access(): void
     {
         [$adminToken] = $this->register('admin@example.com', 'admin');

@@ -1,6 +1,6 @@
 # Laravel API backend
 
-Backend xử lý danh mục sản phẩm, kiểm tra giỏ hàng, tạo đơn và lưu yêu cầu hợp tác. API nằm trong `routes/api.php`, chạy theo middleware stateless của Laravel. Cơ sở dữ liệu mặc định là SQLite; có thể đổi sang MySQL của Laragon.
+Backend xử lý danh mục sản phẩm, kiểm tra giỏ hàng, tạo đơn và tiếp nhận phản ánh. API nằm trong `routes/api.php`, chạy theo middleware stateless của Laravel. Cơ sở dữ liệu mặc định là SQLite; có thể đổi sang MySQL của Laragon.
 
 ## Yêu cầu
 
@@ -32,6 +32,10 @@ php artisan migrate --seed
 
 Các lệnh trên tạo cấu hình và dữ liệu mẫu. Nếu database đã được tạo, có thể bỏ qua bước cài đặt và chỉ chạy server.
 
+Sau khi cập nhật dự án, chạy `php artisan migrate --no-interaction` trong thư mục `backend/` để bổ sung phân khúc sản phẩm. Sản phẩm đã có không bị tự động phân loại; Manager hoặc Admin gán phân khúc sau khi kiểm tra dữ liệu. Sản phẩm mẫu mới được seed có phân khúc minh họa, cần trại xác nhận.
+
+Để thêm riêng 12 sản phẩm mẫu cho các danh mục và phân khúc vào database hiện có, chạy `php artisan db:seed --class=DemoCatalogSeeder --no-interaction`. Lệnh này chỉ thêm sản phẩm chưa có theo mã mẫu, không ghi đè sản phẩm hiện hữu. Tên, hình ảnh, mô tả và giá là dữ liệu demo và cần được trại xác nhận trước khi bán thật.
+
 ## Khởi động API
 
 Trong Terminal thứ nhất, từ thư mục `backend/`:
@@ -52,6 +56,10 @@ Các endpoint:
 `POST /api/checkout` yêu cầu bearer token hợp lệ. Tên và email tài khoản được mã hóa AES; mật khẩu được băm. Email được tra cứu thông qua giá trị HMAC dựa trên `APP_KEY`: khi xoay khóa, cần chuyển đổi lại chỉ mục này cùng dữ liệu mã hóa; chỉ thiết lập `APP_PREVIOUS_KEYS` không tự cập nhật chỉ mục đăng nhập.
 
 Đơn D2C mới chỉ có tiền hàng; `shipping_fee` và `total` để trống cho đến khi Admin nhập phí sau khi liên hệ khách. Admin phải xác nhận khách đồng ý trước khi đánh dấu đơn đã xác nhận. Thay đổi đơn và phản ánh đều cần được trại thông báo cho khách qua kênh liên lạc riêng; website chưa gửi thông báo tự động.
+
+Ưu đãi demo được cấu hình tại `config/promotions.php`: mã `WELCOME` giảm 20.000đ cho đơn đầu từ 200.000đ; mua từ 5 sản phẩm hoặc mua lại trong 30 ngày sau đơn đã giao giảm 5%; mỗi đơn áp dụng một ưu đãi. Tiền hàng sau giảm từ 600.000đ được miễn phí giao khi trại xác nhận giao được. Khi Admin đánh dấu đã giao, đơn được cộng 1 điểm cho mỗi 100.000đ tiền hàng sau giảm và cấp voucher 10.000đ cho đơn sau; điểm hiện chỉ để theo dõi. Voucher được giữ khi đặt và hoàn lại nếu đơn bị hủy. Đơn đã giao hoặc đã hủy không thể đổi trạng thái để bảo toàn điểm và voucher; xử lý hoàn hàng sau giao cần quy trình riêng. Mua lại không tự tạo lịch giao định kỳ.
+
+API xác thực `GET /api/rewards` trả điểm, voucher và cấu hình; `POST /api/checkout/preview` kiểm tra giỏ và mã. Backend tính lại giá và ưu đãi khi tạo đơn. Đây là mức minh họa, cần chủ trại phê duyệt và cập nhật cả cấu hình lẫn nội dung chính sách trước khi áp dụng thực tế; sau khi thay cấu hình Laravel cần xóa hoặc tạo lại config cache.
 
 ## Phân quyền User, Manager và Admin
 
